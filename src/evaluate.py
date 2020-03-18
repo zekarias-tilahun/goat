@@ -1,0 +1,155 @@
+from sklearn import metrics, cluster
+
+import networkx as nx
+import pandas as pd
+import numpy as np
+import argparse
+
+import helper
+
+
+def nmi_ami(com_path, emb_path, seed=0):
+    helper.log(f'Reading ground truth communities from {com_path}')
+    com_df = pd.read_csv(com_path, header=None, sep=r'\s+', names=['node', 'com'], index_col=0)
+    helper.log(f'Reading embeddings from {emb_path}')
+    emb_df = pd.read_csv(emb_path, header=None, sep=r'\s+', index_col=0)
+
+    helper.log('Building features')
+    labeled_features = com_df.merge(emb_df, left_index=True, right_index=True)
+    ground_truth = labeled_features.com.values
+    features = labeled_features.values[:, 1:]
+    num_com = len(set(ground_truth))
+
+    helper.log(f'Learning to identify {num_com} clusters using spectral clustering')
+    clustering = cluster.SpectralClustering(
+        n_clusters=num_com, assign_labels="discretize", random_state=seed)
+    predictions = clustering.fit(features).labels_
+    nmi = metrics.normalized_mutual_info_score(ground_truth, predictions, average_method='arithmetic')
+    ami = metrics.adjusted_mutual_info_score(ground_truth, predictions, average_method='arithmetic')
+    return nmi, ami
+
+
+def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edges=None, context=True):
+    # Adapted from CANE: https://github.com/thunlp/CANE/blob/master/code/auc.py
+    if is_dev:
+        nodes = list(range(u_embed.shape[0]))
+        test_edges = list(zip(range(u_embed.shape[0]), range(v_embed.shape[0])))
+    else:
+        nodes = list({n for edge in test_edges for n in edge})
+    
+    def get_random_index(u, v, lookup=None):
+        while True:
+            node = np.random.choice(nodes)
+            if node != u and node != v:
+                if lookup is None:
+                    return node
+                elif node in lookup:
+                    return node
+        
+    scores = []
+    for i in range(len(test_edges)):
+        if is_dev:
+            u = v = i
+            j = get_random_index(u=i, v=i)
+        else:
+            u = test_edges[i][0]
+            v = test_edges[i][1]
+            if u not in u_embed or v not in u_embed:
+                continue
+            j = get_random_index(u=u, v=v, lookup=v_embed)
+
+        u_emb = u_embed[u]
+        v_emb = v_embed[v]
+        j_emb = v_embed[j]
+
+        pos_score = u_emb.dot(v_emb.transpose()).max()
+        neg_score = u_emb.dot(j_emb.transpose()).max()
+
+        
+        scores.append([pos_score, neg_score])
+        
+    return np.array(scores)
+
+
+def compute_results(scores, metrics=('auc', 'pak'), k=100):
+    pos_scores = list(zip(scores[:, 0], [1] * scores.shape[0]))
+    neg_scores = list(zip(scores[:, 1], [0] * scores.shape[0]))
+    melted_scores = np.array(sorted(pos_scores + neg_scores, key=lambda l: l[0], reverse=True))
+    
+    results = {}
+    for metric in metrics:
+        if metric == 'auc':
+            hits = scores[:, 0] > scores[:, 1]
+            hit_count = hits[hits].shape[0]
+
+            ties = scores[:, 0] == scores[:, 1]
+            tie_count = ties[ties].shape[0] / 2.
+            auc = (hit_count + tie_count) / scores.shape[0]
+            results['auc'] = auc
+        elif metric == 'pak':
+            k_values = {k} if isinstance(k, int) else k
+            results['pak'] = {}
+            for k_val in k_values:
+                melted_scores_at_k = melted_scores[:k]
+                pak = melted_scores_at_k[melted_scores_at_k[:, 1] == 1].shape[0] / k
+                results['pak'][k_val] = pak
+    return results
+
+
+def parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--emb-path', type=str, default='./data/cora/outputs/gap_context_15.emb',
+                        help='Path to the embedding file')
+    parser.add_argument('--te-path', type=str, default='./data/cora/outputs/test_graph_15.txt',
+                        help='Path to the test edges file')
+    parser.add_argument('--com-path', type=str, default='',
+                        help='Path to the ground truth community file')
+    parser.add_argument('--context', type=bool, default=True,
+                        help='Use context-sensitive embeddings. If false aggregated embeddings will be used')
+    parser.add_argument('--verbose', type=bool, default=True)
+    return parser.parse_args()
+
+
+def main(args):
+    
+    helper.VERBOSE = args.verbose
+    if args.te_path == '' and args.com_path == '':
+        helper.log('Atleast a path to test edges file or ground truth community file should be specified',
+                   level=helper.ERROR)
+    else:
+        results = {}
+        if args.te_path != '':
+            helper.log('Running link prediction', level=helper.INFO)
+            if args.context:
+                embeddings = helper.read_context_embedding(args.emb_path)
+            else:
+                embeddings = helper.read_embedding(args.emb_path)
+            test_graph = nx.read_edgelist(args.te_path, nodetype=int)
+            auc_scores = []
+            pak_scores = []
+            helper.log('Computing AUC')
+            for i in range(10):
+                scores = compute_link_probabilities(
+                    is_dev=False, u_embed=embeddings, v_embed=embeddings,
+                    test_edges=list(test_graph.edges()), context=args.context)
+                cur_results = compute_results(scores)
+                auc_scores.append(cur_results['auc'])
+                pak_scores.append(cur_results['pak'][100])
+            avg_auc = np.mean(auc_scores)
+            avg_pak = np.mean(pak_scores)
+            
+            std_auc = np.std(auc_scores)
+            std_pak = np.std(pak_scores)
+            helper.log(f"Average auc score = {avg_auc}")
+            helper.log(f"Average P@100 = {avg_pak}")
+            results['link_prediction'] = avg_auc, std_auc, avg_pak, std_pak
+        if args.com_path != '': 
+            helper.log('Running node clustering')
+            nmi, ami = nmi_ami(com_path=args.com_path, emb_path=args.emb_path)
+            helper.log(f'NMI: {nmi}')
+            helper.log(f'AMI: {ami}')
+            results['node_clustering'] = nmi, ami
+        return results
+
+if __name__ == '__main__':
+    main(parse())
