@@ -31,7 +31,7 @@ def _generate_mask(tensor):
     Generates a mask for a tensor.  The mask will be generated according to the following rule
 
             mask[i, j] = 0 if tensor[i, j] != 0
-            mask[i, j] = ∞ if tensor[i, j] == 0
+            mask[i, j] = -∞ if tensor[i, j] == 0
 
     :param tensor: Input tensor
 
