@@ -37,7 +37,7 @@ class GoatWrapper:
             _, _, source_rep, target_rep = self._infer(batch=fb)
             val_loss = self.loss_fun(self.model)
             link_probs = evaluate.compute_link_probabilities(u_embed=source_rep, v_embed=target_rep)
-            cur_results = evaluate.compute_results(scores=link_probs, metrics={'auc'})
+            cur_results = evaluate.compute_lp_metrics(link_probabilities=link_probs, eval_metrics={'auc'})
             
             losses.append(as_numpy_array(val_loss.loss))
             aucs.append(cur_results['auc'])
@@ -64,7 +64,7 @@ class GoatWrapper:
                 train_loss = criterion.loss.data
 
             if args.dev_rate > 0:
-                dev_losses, dev_aucs  = self._validate()
+                dev_losses, dev_aucs = self._validate()
                 helper.log(
                     'Epoch: {}/{} training loss: {:.5f} validation loss: {:.5f} validation AUC: {:.5f}'.format(
                         i + 1, args.epochs, train_loss, np.mean(dev_losses), np.mean(dev_aucs)))
@@ -130,7 +130,7 @@ class GoatWrapper:
         args = self._args
         if args.output_dir != '':
             suffix = '' if args.tr_rate == 1 else f'_{str(int(args.tr_rate * 100))}'
-            path = os.path.join(args.output_dir, f'gap_context{suffix}.emb')
+            path = os.path.join(args.output_dir, f'goat_context{suffix}.emb')
             helper.log(f'Saving context embedding to {path}')
             with open(path, 'w') as f:
                 for node in self.context_embedding:
@@ -138,7 +138,7 @@ class GoatWrapper:
                         output = '{} {}\n'.format(node, ' '.join(str(val) for val in emb))
                         f.write(output)
             
-            path = os.path.join(args.output_dir, f'gap_global{suffix}.emb')
+            path = os.path.join(args.output_dir, f'goat_global{suffix}.emb')
             helper.log(f'Saving global embedding to {path}')
             with open(path, 'w') as f:
                 for node in self.global_embedding:

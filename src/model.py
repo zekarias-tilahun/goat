@@ -13,25 +13,35 @@ import torch as t
 import torch.nn as nn
 
 
-class AblationLogLoss:
-
-    def __init__(self, model, weights=None):
-        model_score = model.source_emb.mul(model.target_emb).sum(1).sigmoid().log()
-        noise_score = model.source_emb.mul(-model.negative_emb).sum(1).sigmoid().log()
-        score = model_score + noise_score
-        self.loss = -t.mean(score if weights is None else score * weights)
-        
-
 class LogLoss:
 
-    def __init__(self, model, weights=None):
-        model_score = model.source_rep.mul(model.target_rep).sum(1).sigmoid().log()
-        noise_score = model.source_rep.mul(-model.negative_rep).sum(1).sigmoid().log()
+    def __init__(self, model, weights=None, context=True):
+        self.model = model
+        self.weights = weights
+        if context:
+            self._compute_loss(source_rep=self.model.source_rep, target_rep=self.model.target_rep,
+                               negative_rep=self.model.negative_rep)
+        else:
+            # Used for training the GLOBAL model
+            self._compute_loss(source_rep=self.model.source_emb, target_rep=self.model.target_emb,
+                               negative_rep=self.model.negative_emb)
+
+    def _compute_loss(self, source_rep, target_rep, negative_rep):
+        """
+        Loss function used for training GOAT
+        :return:
+        """
+        model_score = source_rep.mul(target_rep).sum(1).sigmoid().log()
+        noise_score = source_rep.mul(-negative_rep).sum(1).sigmoid().log()
         score = model_score + noise_score
-        self.loss = -t.mean(score if weights is None else score * weights)
+        self.loss = -t.mean(score if self.weights is None else score * self.weights)
 
 
 class GlobalEmbedding(nn.Module):
+
+    """
+    Global embedding of nodes
+    """
 
     def __init__(self, in_dim, out_dim, rate):
         super(GlobalEmbedding, self).__init__()
@@ -51,6 +61,10 @@ class GlobalEmbedding(nn.Module):
 
 
 class GOAT(nn.Module):
+
+    """
+    GOAT model
+    """
 
     def __init__(self, num_nodes, emb_dim, rate=0.5):
         super(GOAT, self).__init__()

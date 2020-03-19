@@ -124,6 +124,11 @@ class RawData:
         self._process_edges()
 
     def _read_graph(self):
+        """
+        Reads or initializes a graph.
+
+        :return:
+        """
         args = self._args
         if self.train_graph is None or self.test_graph is None:
             helper.log(f'Reading graph from {args.input}')
@@ -136,6 +141,11 @@ class RawData:
             self.graph = nx.union(self.train_graph, self.test_graph)
 
     def _train_test_split(self):
+        """
+        Splits the data into training and test sets
+
+        :return:
+        """
         helper.log('Splitting data into train and test sets')
         args = self._args
         self.test_nodes = []
@@ -175,6 +185,11 @@ class RawData:
         helper.log(f'Number of edges {self.num_edges}')
 
     def _sample_neighborhood(self):
+        """
+        A wrapper for the module level neighborhood sampling function (_sample_neighborhood)
+
+        :return:
+        """
         args = self._args
         self.neighborhood_matrix = _sample_neighborhood(nbr_size=args.nbr_size, graph=self.graph)
         if self._hold_out:
@@ -185,6 +200,11 @@ class RawData:
         self.neighborhood_matrix = torch.LongTensor(self.neighborhood_matrix)
 
     def _process_edges(self):
+        """
+        Process edges so as to associate negative connections
+
+        :return:
+        """
         def draw_negative_node(u, v):
             random_indices = np.random.permutation(len(self.node_dist_table))
             for random_index in random_indices:
@@ -205,12 +225,24 @@ class RawData:
 
 class EagerDataset:
 
+    """
+    A dataset for training GOAT. It prepares all the data necessary for training as a list of
+    batches for training and validating the model. This is used when the data is fairly small,
+    i.e. when the number of edges is <100K. However, GOAT runs faster with this alternative as
+    there is no processing while training,.
+    """
+
     def __init__(self, args, data=None):
         self._args = args
         self._data = data
-        self._processes_train_test_data()
+        self._processes_train_dev_data()
 
-    def _processes_train_test_data(self):
+    def _processes_train_dev_data(self):
+        """
+        Builds training and validation batches
+
+        :return:
+        """
         args = self._args
         self.dev_batches = []
         train_edges = self._data.edges
@@ -230,6 +262,12 @@ class EagerDataset:
 
 
 class LazyDataset(td.Dataset):
+
+    """
+    A dataset for training GOAT. It prepares all the data necessary for training using PyTorch
+    Dataset and DataLoader. This enables GOAT to handle larger datasets, and slightly slower
+    than the EagerDataset.
+    """
 
     def __init__(self, data, partition=None):
         self._data = data
@@ -256,14 +294,14 @@ def compile_training_data(args, train_graph=None, test_graph=None):
     Builds training and validation batches as a list of batches or iterator.
     For small datasets list will be used otherwise iterator.
 
-    :param args:
-    :param train_graph:
-    :param test_graph:
+    :param args: Input arguments
+    :param train_graph: If specified, a graph will be initialized instead of reading
+    :param test_graph: If specified, a graph will be initialized instead of reading
     :return: A dictionary containing all the relevant data for training GOAT
     """
     raw_data = RawData(args, train_graph=train_graph, test_graph=test_graph)
     data = {"num_nodes": raw_data.num_nodes, "num_edges": raw_data.num_edges, "dev_batches": None}
-    if raw_data.num_edges < 1000:
+    if raw_data.num_edges < 100000:
         dataset = EagerDataset(args=args, data=raw_data)
         data["train_batches"] = dataset.train_batches
         if len(dataset.dev_batches) > 1:

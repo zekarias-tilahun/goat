@@ -11,6 +11,12 @@ WARN = 'WARN'
 
 
 def read_context_embedding(path):
+    """
+    Reads context embeddings of nodes. Each node can have one or more embedding
+
+    :param path: A path to context embedding of nodes
+    :return: A dictionary of node->context_embeddings
+    """
     log('Reading context embedding from {}'.format(path))
     embeddings = {}
     with open(path, 'rb') as f:
@@ -28,7 +34,13 @@ def read_context_embedding(path):
     return embeddings
             
             
-def read_embedding(path):
+def read_global_embedding(path):
+    """
+    Reads global embeddings of nodes
+
+    :param path:
+    :return:
+    """
     log('Reading embedding from {}'.format(path))
     embeddings = {}
     with open(path, 'rb') as f:
@@ -40,6 +52,14 @@ def read_embedding(path):
 
 
 def log(msg, cr=False, level=INFO):
+    """
+    Message logger
+
+    :param msg: The message
+    :param cr: Whether to carriage return or not
+    :param level: log level
+    :return:
+    """
     global VERBOSE
     if VERBOSE:
         if cr:
@@ -49,11 +69,8 @@ def log(msg, cr=False, level=INFO):
             print(f"{level}: {msg}")
 
 
-def scale_min_max(old_values, new_max, new_min):
-    old_min = old_values.min()
-    old_max = old_values.max()
-    val_std = (old_values - old_min) / (old_max - old_min)
-    return val_std * (new_max - new_min) + new_min
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 
 def parse_args():

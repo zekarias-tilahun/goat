@@ -9,6 +9,15 @@ import helper
 
 
 def nmi_ami(com_path, emb_path, seed=0):
+    """
+    Computes the normalized and adjusted mutual information scores of node embeddings in a given
+    path in clustering nodes according to a ground truth community labels
+
+    :param com_path: A path to ground truth community labels
+    :param emb_path: A path to node embeddings
+    :param seed: Random seed
+    :return:
+    """
     helper.log(f'Reading ground truth communities from {com_path}')
     com_df = pd.read_csv(com_path, header=None, sep=r'\s+', names=['node', 'com'], index_col=0)
     helper.log(f'Reading embeddings from {emb_path}')
@@ -29,7 +38,15 @@ def nmi_ami(com_path, emb_path, seed=0):
     return nmi, ami
 
 
-def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edges=None, context=True):
+def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edges=None):
+    """
+    Computes the link
+    :param is_dev:
+    :param u_embed:
+    :param v_embed:
+    :param test_edges:
+    :return:
+    """
     # Adapted from CANE: https://github.com/thunlp/CANE/blob/master/code/auc.py
     if is_dev:
         nodes = list(range(u_embed.shape[0]))
@@ -46,7 +63,7 @@ def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edg
                 elif node in lookup:
                     return node
         
-    scores = []
+    link_probabilities = []
     for i in range(len(test_edges)):
         if is_dev:
             u = v = i
@@ -62,29 +79,37 @@ def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edg
         v_emb = v_embed[v]
         j_emb = v_embed[j]
 
-        pos_score = u_emb.dot(v_emb.transpose()).max()
-        neg_score = u_emb.dot(j_emb.transpose()).max()
+        pos_score = helper.sigmoid(u_emb.dot(v_emb.transpose()).max())
+        neg_score = helper.sigmoid(u_emb.dot(j_emb.transpose()).max())
 
+        link_probabilities.append([pos_score, neg_score])
         
-        scores.append([pos_score, neg_score])
-        
-    return np.array(scores)
+    return np.array(link_probabilities)
 
 
-def compute_results(scores, metrics=('auc', 'pak'), k=100):
-    pos_scores = list(zip(scores[:, 0], [1] * scores.shape[0]))
-    neg_scores = list(zip(scores[:, 1], [0] * scores.shape[0]))
+def compute_lp_metrics(link_probabilities, eval_metrics=('auc', 'pak'), k=100):
+    """
+    Computes the link prediction scores for a given set of evaluation metrics for a specified
+    link probability scores.
+
+    :param link_probabilities: Link probability scores of true and false edges
+    :param eval_metrics: A set of evaluation metrics
+    :param k: K if precision at k is one of the evaluation metrics.
+    :return: The dictionary containing the results for each metrics, as metric->score
+    """
+    pos_scores = list(zip(link_probabilities[:, 0], [1] * link_probabilities.shape[0]))
+    neg_scores = list(zip(link_probabilities[:, 1], [0] * link_probabilities.shape[0]))
     melted_scores = np.array(sorted(pos_scores + neg_scores, key=lambda l: l[0], reverse=True))
     
     results = {}
-    for metric in metrics:
+    for metric in eval_metrics:
         if metric == 'auc':
-            hits = scores[:, 0] > scores[:, 1]
+            hits = link_probabilities[:, 0] > link_probabilities[:, 1]
             hit_count = hits[hits].shape[0]
 
-            ties = scores[:, 0] == scores[:, 1]
+            ties = link_probabilities[:, 0] == link_probabilities[:, 1]
             tie_count = ties[ties].shape[0] / 2.
-            auc = (hit_count + tie_count) / scores.shape[0]
+            auc = (hit_count + tie_count) / link_probabilities.shape[0]
             results['auc'] = auc
         elif metric == 'pak':
             k_values = {k} if isinstance(k, int) else k
@@ -98,7 +123,7 @@ def compute_results(scores, metrics=('auc', 'pak'), k=100):
 
 def parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--emb-path', type=str, default='./data/cora/outputs/gap_context_15.emb',
+    parser.add_argument('--emb-path', type=str, default='./data/cora/outputs/goat_context_15.emb',
                         help='Path to the embedding file')
     parser.add_argument('--te-path', type=str, default='./data/cora/outputs/test_graph_15.txt',
                         help='Path to the test edges file')
@@ -123,7 +148,7 @@ def main(args):
             if args.context:
                 embeddings = helper.read_context_embedding(args.emb_path)
             else:
-                embeddings = helper.read_embedding(args.emb_path)
+                embeddings = helper.read_global_embedding(args.emb_path)
             test_graph = nx.read_edgelist(args.te_path, nodetype=int)
             auc_scores = []
             pak_scores = []
@@ -131,8 +156,8 @@ def main(args):
             for i in range(10):
                 scores = compute_link_probabilities(
                     is_dev=False, u_embed=embeddings, v_embed=embeddings,
-                    test_edges=list(test_graph.edges()), context=args.context)
-                cur_results = compute_results(scores)
+                    test_edges=list(test_graph.edges()))
+                cur_results = compute_lp_metrics(scores)
                 auc_scores.append(cur_results['auc'])
                 pak_scores.append(cur_results['pak'][100])
             avg_auc = np.mean(auc_scores)
@@ -150,6 +175,7 @@ def main(args):
             helper.log(f'AMI: {ami}')
             results['node_clustering'] = nmi, ami
         return results
+
 
 if __name__ == '__main__':
     main(parse())
