@@ -1,6 +1,6 @@
 # GOAT
 
-A PyTorch implementation of the "Gossip and Attend: Context-sensitive Graph Representation Learning" paper, to appear on the International AAAI Conference on Web and Social Media (ICWSM 2020)
+A PyTorch implementation of the "```Go```ssip and ```At```tend: Context-sensitive Graph Representation Learning" paper, to appear on the International AAAI Conference on Web and Social Media (ICWSM 2020)
 
 ### Requirements!
   - Python 3.6+
