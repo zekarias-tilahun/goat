@@ -1,6 +1,5 @@
 import numpy as np
 import argparse
-import random
 import sys
 
 VERBOSE = False

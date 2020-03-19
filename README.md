@@ -7,6 +7,8 @@ A PyTorch implementation of the "Gossip and Attend: Context-sensitive Graph Repr
   - PyTorch 1.3.1+
   - networkx 2.3+
   - Numpy 1.17.2+
+  - Scikit-learn 0.20.3+ (optional, used for evaluation)
+  - Pandas 0.24.2+ (optional, used for evaluation)
   
 ### Usage
 #### Example usage
