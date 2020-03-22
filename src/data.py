@@ -15,6 +15,44 @@ random.seed(40)
 np.random.seed(40)
 
 
+def build_uni_gram_distribution_buckets(nodes, degree):
+    avg_deg = int(np.mean(list(degree.values())))
+    threshold = sum(degree.values()) // avg_deg
+    # Uni-gram distribution buckets used for efficient negative sampling
+    buckets = [None] * avg_deg
+    bucket_lookup = {}
+    bucket_index = 0
+    for node in nodes:
+        dist = [node] * degree[node]
+        buckets[bucket_index] = dist if buckets[bucket_index] is None else buckets[bucket_index] + dist
+        bucket_lookup[node] = bucket_index
+        if len(buckets[bucket_index]) >= threshold:
+            bucket_index += 1
+
+    max_bucket = max(bucket_lookup.values())
+    del buckets[max_bucket + 1:]
+    return buckets, bucket_lookup
+
+
+def other_random(high, exclude):
+    """
+    Generates a random number in [0, high) that is different from a set of specified values to be excluded
+
+    :param high: The highest number
+    :param exclude: The set of values to be excluded
+    :return:
+    """
+    random_order = np.random.permutation(high)
+    for rand_num in random_order:
+        if rand_num not in exclude:
+            return rand_num
+
+    # while True:
+    #     other = np.random.randint(0, high)
+    #     if other not in exclude:
+    #         return other
+
+
 def source_targets(edge_list):
     """
     Splits (unzip) an edge list into a tuple of list of sources and list of targets.
@@ -206,20 +244,23 @@ class RawData:
         :return:
         """
         def draw_negative_node(u, v):
-            random_indices = np.random.permutation(len(self.node_dist_table))
-            for random_index in random_indices:
-                rand_node = self.node_dist_table[random_index]
+            while True:
+                rand_index = np.random.randint(0, len(self.node_dist_table))
+                rand_node = self.node_dist_table[rand_index]
                 if rand_node != u and rand_node != v:
                     return rand_node
+        helper.log('Sampling negative nodes')
 
         degree = {node: int(1 + self.graph.degree(node) ** 0.75) for node in self.graph.nodes()}
         # node_dist_table is equivalent of the uni-gram distribution table in the word2vec implementation
         self.node_dist_table = [node for node, new_degree in degree.items() for _ in range(new_degree)]
-        helper.log('Sampling negative nodes')
         edges = []
         for i in range(len(self.train_sources)):
             negative_node = draw_negative_node(self.train_sources[i], self.train_targets[i])
             edges.append((self.train_sources[i], self.train_targets[i], negative_node))
+            if (i + 1) % 50000 == 0:
+                helper.log(f"{i}/{len(self.train_sources)}", cr=True, level=helper.PROG)
+        helper.log()
         self.edges = np.array(edges)
 
 

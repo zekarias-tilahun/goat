@@ -27,12 +27,12 @@ def read_context_embedding(path):
                 embeddings[node].append(emb)
             else:
                 embeddings[node] = [emb]
-                
+
     for node in embeddings:
         embeddings[node] = np.vstack(embeddings[node])
     return embeddings
-            
-            
+
+
 def read_global_embedding(path):
     """
     Reads global embeddings of nodes
@@ -50,7 +50,7 @@ def read_global_embedding(path):
     return embeddings
 
 
-def log(msg, cr=False, level=INFO):
+def log(msg='', cr=False, level=INFO):
     """
     Message logger
 
@@ -61,6 +61,9 @@ def log(msg, cr=False, level=INFO):
     """
     global VERBOSE
     if VERBOSE:
+        if msg == '':
+            print()
+            return
         if cr:
             sys.stdout.write(f'\r{level}: {msg}')
             sys.stdout.flush()

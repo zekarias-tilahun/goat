@@ -35,7 +35,7 @@ class LogLoss:
         noise_score = source_rep.mul(-negative_rep).sum(1).sigmoid().log()
         score = model_score + noise_score
         self.loss = -t.mean(score if self.weights is None else score * self.weights)
-
+        
 
 class GlobalEmbedding(nn.Module):
 

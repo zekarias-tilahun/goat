@@ -37,7 +37,7 @@ class GoatWrapper:
             _, _, source_rep, target_rep = self._infer(batch=fb)
             val_loss = self.loss_fun(self.model)
             link_probs = evaluate.compute_link_probabilities(u_embed=source_rep, v_embed=target_rep)
-            cur_results = evaluate.compute_lp_metrics(link_probabilities=link_probs, eval_metrics={'auc'})
+            cur_results = evaluate.compute_results(link_probabilities=link_probs, eval_metrics={'auc'})
             
             losses.append(as_numpy_array(val_loss.loss))
             aucs.append(cur_results['auc'])

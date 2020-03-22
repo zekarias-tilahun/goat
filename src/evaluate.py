@@ -53,7 +53,7 @@ def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edg
         test_edges = list(zip(range(u_embed.shape[0]), range(v_embed.shape[0])))
     else:
         nodes = list({n for edge in test_edges for n in edge})
-    
+
     def get_random_index(u, v, lookup=None):
         while True:
             node = np.random.choice(nodes)
@@ -62,7 +62,7 @@ def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edg
                     return node
                 elif node in lookup:
                     return node
-        
+
     link_probabilities = []
     for i in range(len(test_edges)):
         if is_dev:
@@ -83,24 +83,20 @@ def compute_link_probabilities(is_dev=True, u_embed=None, v_embed=None, test_edg
         neg_score = helper.sigmoid(u_emb.dot(j_emb.transpose()).max())
 
         link_probabilities.append([pos_score, neg_score])
-        
+
     return np.array(link_probabilities)
 
 
-def compute_lp_metrics(link_probabilities, eval_metrics=('auc', 'pak'), k=100):
+def compute_lp_metrics(link_probabilities, eval_metrics=('auc', 'ap')):
     """
     Computes the link prediction scores for a given set of evaluation metrics for a specified
     link probability scores.
 
     :param link_probabilities: Link probability scores of true and false edges
     :param eval_metrics: A set of evaluation metrics
-    :param k: K if precision at k is one of the evaluation metrics.
     :return: The dictionary containing the results for each metrics, as metric->score
     """
-    pos_scores = list(zip(link_probabilities[:, 0], [1] * link_probabilities.shape[0]))
-    neg_scores = list(zip(link_probabilities[:, 1], [0] * link_probabilities.shape[0]))
-    melted_scores = np.array(sorted(pos_scores + neg_scores, key=lambda l: l[0], reverse=True))
-    
+
     results = {}
     for metric in eval_metrics:
         if metric == 'auc':
@@ -111,13 +107,12 @@ def compute_lp_metrics(link_probabilities, eval_metrics=('auc', 'pak'), k=100):
             tie_count = ties[ties].shape[0] / 2.
             auc = (hit_count + tie_count) / link_probabilities.shape[0]
             results['auc'] = auc
-        elif metric == 'pak':
-            k_values = {k} if isinstance(k, int) else k
-            results['pak'] = {}
-            for k_val in k_values:
-                melted_scores_at_k = melted_scores[:k]
-                pak = melted_scores_at_k[melted_scores_at_k[:, 1] == 1].shape[0] / k
-                results['pak'][k_val] = pak
+        elif metric == 'ap':
+            positive_scores = zip(link_probabilities[:, 0].tolist(), [1] * link_probabilities.shape[0])
+            negative_scores = zip(link_probabilities[:, 1].tolist(), [0] * link_probabilities.shape[0])
+            data = sorted(list(positive_scores) + list(negative_scores), key=lambda l: l[0], reverse=True)
+            data = np.array(data)
+            results['ap'] = metrics.average_precision_score(data[:, 1], data[:, 0], average='micro')
     return results
 
 
@@ -136,10 +131,10 @@ def parse():
 
 
 def main(args):
-    
+
     helper.VERBOSE = args.verbose
     if args.te_path == '' and args.com_path == '':
-        helper.log('Atleast a path to test edges file or ground truth community file should be specified',
+        helper.log('At least a path to test edges file or ground truth community file should be specified',
                    level=helper.ERROR)
     else:
         results = {}
@@ -151,24 +146,25 @@ def main(args):
                 embeddings = helper.read_global_embedding(args.emb_path)
             test_graph = nx.read_edgelist(args.te_path, nodetype=int)
             auc_scores = []
-            pak_scores = []
-            helper.log('Computing AUC')
+            ap_scores = []
+            helper.log('Computing AUC and AP scores')
             for i in range(10):
                 scores = compute_link_probabilities(
                     is_dev=False, u_embed=embeddings, v_embed=embeddings,
                     test_edges=list(test_graph.edges()))
                 cur_results = compute_lp_metrics(scores)
                 auc_scores.append(cur_results['auc'])
-                pak_scores.append(cur_results['pak'][100])
+                ap_scores.append(cur_results['ap'])
             avg_auc = np.mean(auc_scores)
-            avg_pak = np.mean(pak_scores)
-            
+            avg_ap = np.mean(ap_scores)
+
             std_auc = np.std(auc_scores)
-            std_pak = np.std(pak_scores)
-            helper.log(f"Average auc score = {avg_auc}")
-            helper.log(f"Average P@100 = {avg_pak}")
-            results['link_prediction'] = avg_auc, std_auc, avg_pak, std_pak
-        if args.com_path != '': 
+            std_ap = np.std(ap_scores)
+            helper.log(f"Mean scores out of 10 iterations:")
+            helper.log(f"\tAUC score = {avg_auc}")
+            helper.log(f"\tAP = {avg_ap}")
+            results['link_prediction'] = avg_auc, std_auc, avg_ap, std_ap
+        if args.com_path != '':
             helper.log('Running node clustering')
             nmi, ami = nmi_ami(com_path=args.com_path, emb_path=args.emb_path)
             helper.log(f'NMI: {nmi}')
