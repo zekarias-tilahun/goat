@@ -342,13 +342,18 @@ def compile_training_data(args, train_graph=None, test_graph=None):
     """
     raw_data = RawData(args, train_graph=train_graph, test_graph=test_graph)
     data = {"num_nodes": raw_data.num_nodes, "num_edges": raw_data.num_edges, "dev_batches": None}
-    if raw_data.num_edges < 100000:
+    if raw_data.num_edges < 20000000:
+        # This code is tested with a synthetic dataset upto 20M edges, using a 100GB RAM machine.
+        # The alternative condition should be used for large graphs.
         dataset = EagerDataset(args=args, data=raw_data)
         data["train_batches"] = dataset.train_batches
         if len(dataset.dev_batches) > 1:
             data["dev_batches"] = dataset.dev_batches
         data["total_batches"] = len(data["train_batches"])
+        data['from_td'] = False
     else:
+        # This branch has a bug
+        # TODO: Find out the bug and fix it
         train_partition = np.random.permutation(len(raw_data.edges))
         dev_partition = []
         if raw_data.use_dev:
@@ -364,4 +369,5 @@ def compile_training_data(args, train_graph=None, test_graph=None):
             dev_loader = td.DataLoader(dataset=dev_dataset, batch_size=64, num_workers=args.workers)
             data["dev_batches"] = dev_loader
         data["total_batches"] = len(train_partition) // 64
+        data['from_td'] = True
     return namedtuple("TrainData", data.keys())(*data.values())

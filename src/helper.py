@@ -101,7 +101,7 @@ def parse_args():
     parser.add_argument('--nbr-size', type=int, default=100,
                         help='The maximum neighborhood size. Default is 100')
     parser.add_argument('--workers', type=int,
-                        default=8, help="Turn logging on or off")
+                        default=8, help="Number of parallel workers")
     parser.add_argument('--verbose', type=int,
                         default=1, help="Turn logging on or off")
     return parser.parse_args()
