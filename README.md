@@ -7,8 +7,9 @@ A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Gr
   - PyTorch 1.3.1+
   - networkx 2.3+
   - Numpy 1.17.2+
-  - Scikit-learn 0.20.3+ (optional, used for evaluation)
-  - Pandas 0.24.2+ (optional, used for evaluation)
+### Requirements to run evaluation script (optional)
+  - Scikit-learn 0.20.3+ 
+  - Pandas 0.24.2+ 
   
 ### Usage
 #### Example usage
