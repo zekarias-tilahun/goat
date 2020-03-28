@@ -12,14 +12,6 @@ import os
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-print(device)
-
-
-def to_cpu_tensor(tensor):
-    if device == 'cpu':
-        return tensor
-    return tensor.cpu().data.numpy()
-
 
 class GoatWrapper:
 
@@ -44,7 +36,7 @@ class GoatWrapper:
             link_probs = evaluate.compute_link_probabilities(u_embed=source_rep, v_embed=target_rep)
             cur_results = evaluate.compute_lp_metrics(link_probs, {'auc'})
 
-            losses.append(to_cpu_tensor(val_crt.loss))
+            losses.append(as_numpy_array(val_crt.loss))
             aucs.append(cur_results['auc'])
 
         helper.log('Epoch: {}/{} training loss: {:.5f} validation loss: {:.5f} validation AUC: {:.5f}'.format(
@@ -90,18 +82,10 @@ class GoatWrapper:
                    negative_neighborhood=neg_nh, source_mask=batch.source_mask.to(device),
                    target_mask=batch.target_mask.to(device), negative_mask=neg_msk, training=training)
 
-        return (to_cpu_tensor(self.model.source_emb), to_cpu_tensor(self.model.target_emb),
-                to_cpu_tensor(self.model.source_rep), to_cpu_tensor(self.model.target_rep))
+        return (as_numpy_array(self.model.source_emb), as_numpy_array(self.model.target_emb),
+                as_numpy_array(self.model.source_rep), as_numpy_array(self.model.target_rep))
 
-    def infer_embeddings(self, agg=lambda l: np.mean(l, axis=0)):
-        #         def populate_embedding(source_nodes, target_nodes, source_emb, target_emb):
-        #             def apply(idx_emb, idx):
-        #                 node_id = self.data.index_to_node[idx]
-        #                 if node_id in self.context_embedding:
-        #                     self.context_embedding[node_id].append(idx_emb)
-        #                 else:
-        #                     self.context_embedding[node_id] = [idx_emb]
-
+    def infer_embeddings(self):
         def populate_embedding(source_nodes, target_nodes, source_emb, target_emb, emb_dict, context=True):
             def apply(idx_emb, idx):
                 if context:
@@ -121,10 +105,10 @@ class GoatWrapper:
             src_emb, trg_emb, src_rep, trg_rep = self._infer(batch=batch, use_negative=False, training=False)
             self.attention_data['source'].extend(batch.source)
             self.attention_data['target'].extend(batch.target)
-            self.attention_data['source_neighborhood'].extend(to_cpu_tensor(batch.source_neighborhood - 1))
-            self.attention_data['target_neighborhood'].extend(to_cpu_tensor(batch.target_neighborhood - 1))
-            self.attention_data['source_attentions'].extend(to_cpu_tensor(self.model.source_attention_vec.squeeze()))
-            self.attention_data['target_attentions'].extend(to_cpu_tensor(self.model.target_attention_vec.squeeze()))
+            self.attention_data['source_neighborhood'].extend(as_numpy_array(batch.source_neighborhood - 1))
+            self.attention_data['target_neighborhood'].extend(as_numpy_array(batch.target_neighborhood - 1))
+            self.attention_data['source_attentions'].extend(as_numpy_array(self.model.source_attention_vec.squeeze()))
+            self.attention_data['target_attentions'].extend(as_numpy_array(self.model.target_attention_vec.squeeze()))
             populate_embedding(batch.source, batch.target, src_rep, trg_rep, emb_dict=self.context_embedding)
             populate_embedding(batch.source, batch.target, src_emb, trg_emb, emb_dict=self.global_embedding,
                                context=False)
@@ -163,6 +147,12 @@ class GoatWrapper:
                 target_neighborhood=self.attention_data['target_neighborhood'],
                 source_attentions=self.attention_data['source_attentions'],
                 target_attentions=self.attention_data['target_attentions'])
+
+
+def as_numpy_array(tensor):
+    if device == 'cpu':
+        return tensor
+    return tensor.cpu().data.numpy()
 
 
 def main(args, train_graph=None, test_graph=None):
