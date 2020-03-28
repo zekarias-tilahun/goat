@@ -214,7 +214,8 @@ class RawData:
         helper.log('Sampling negative nodes')
 
         degree = {node: int(1 + self.graph.degree(node) ** 0.75) for node in self.graph.nodes()}
-        # node_dist_table is equivalent of the uni-gram distribution table in the word2vec implementation
+        # node_dist_table is equivalent of the uni-gram distribution raised to the power of .75
+        # table in the word2vec implementation
         self.node_dist_table = [node for node, new_degree in degree.items() for _ in range(new_degree)]
         edges = []
         for i in range(len(self.train_sources)):
