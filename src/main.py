@@ -21,7 +21,7 @@ def to_cpu_tensor(tensor):
     return tensor.cpu().data.numpy()
 
 
-class GapWrapper:
+class GoatWrapper:
 
     def __init__(self, args, train_graph=None, test_graph=None):
         self._args = args
@@ -168,7 +168,7 @@ class GapWrapper:
 def main(args, train_graph=None, test_graph=None):
     helper.VERBOSE = False if args.verbose == 0 else True
 
-    wrapper = GapWrapper(args, train_graph=train_graph, test_graph=test_graph)
+    wrapper = GoatWrapper(args, train_graph=train_graph, test_graph=test_graph)
     # import datetime as dt
     # start = dt.datetime.now()
     wrapper.train()
