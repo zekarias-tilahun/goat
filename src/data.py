@@ -15,44 +15,6 @@ random.seed(40)
 np.random.seed(40)
 
 
-def build_uni_gram_distribution_buckets(nodes, degree):
-    avg_deg = int(np.mean(list(degree.values())))
-    threshold = sum(degree.values()) // avg_deg
-    # Uni-gram distribution buckets used for efficient negative sampling
-    buckets = [None] * avg_deg
-    bucket_lookup = {}
-    bucket_index = 0
-    for node in nodes:
-        dist = [node] * degree[node]
-        buckets[bucket_index] = dist if buckets[bucket_index] is None else buckets[bucket_index] + dist
-        bucket_lookup[node] = bucket_index
-        if len(buckets[bucket_index]) >= threshold:
-            bucket_index += 1
-
-    max_bucket = max(bucket_lookup.values())
-    del buckets[max_bucket + 1:]
-    return buckets, bucket_lookup
-
-
-def other_random(high, exclude):
-    """
-    Generates a random number in [0, high) that is different from a set of specified values to be excluded
-
-    :param high: The highest number
-    :param exclude: The set of values to be excluded
-    :return:
-    """
-    random_order = np.random.permutation(high)
-    for rand_num in random_order:
-        if rand_num not in exclude:
-            return rand_num
-
-    # while True:
-    #     other = np.random.randint(0, high)
-    #     if other not in exclude:
-    #         return other
-
-
 def source_targets(edge_list):
     """
     Splits (unzip) an edge list into a tuple of list of sources and list of targets.
