@@ -26,7 +26,7 @@ class GoatWrapper:
     def __init__(self, args, train_graph=None, test_graph=None):
         self._args = args
         self.data = compile_training_data(args, train_graph=train_graph, test_graph=test_graph)
-        self.loss_fun = model.LogLoss  # AblationLogLoss
+        self.loss_fun = model.LogLoss
         self.model = None
         self.context_embedding = {}
         self.global_embedding = {}
