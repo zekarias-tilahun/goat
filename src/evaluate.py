@@ -124,8 +124,10 @@ def parse():
                         help='Path to the test edges file')
     parser.add_argument('--com-path', type=str, default='',
                         help='Path to the ground truth community file')
-    parser.add_argument('--context', type=bool, default=True,
-                        help='Use context-sensitive embeddings. If false aggregated embeddings will be used')
+    parser.add_argument('--context-style', type=int, default=7,
+                        help='How to use context (multiple) embeddings per node., possible values are '
+                             '(0, 1, Any number). 0 => ignore context and use the global embedding, '
+                             '1 => aggregate them, Any number => use all of them. Default is 7. ')
     parser.add_argument('--verbose', type=bool, default=True)
     return parser.parse_args()
 
@@ -140,10 +142,12 @@ def main(args):
         results = {}
         if args.te_path != '':
             helper.log('Running link prediction', level=helper.INFO)
-            if args.context:
-                embeddings = helper.read_context_embedding(args.emb_path)
-            else:
+            if args.context_style == 0:
                 embeddings = helper.read_global_embedding(args.emb_path)
+            elif args.context_style == 1:
+                embeddings = helper.read_context_embedding(args.emb_path, aggregate=lambda x: np.mean(x, axis=0))
+            else:
+                embeddings = helper.read_context_embedding(args.emb_path, aggregate=None)
             test_graph = nx.read_edgelist(args.te_path, nodetype=int)
             auc_scores = []
             ap_scores = []

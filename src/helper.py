@@ -9,11 +9,12 @@ PROG = 'PROG'
 WARN = 'WARN'
 
 
-def read_context_embedding(path):
+def read_context_embedding(path, aggregate=None):
     """
     Reads context embeddings of nodes. Each node can have one or more embedding
 
     :param path: A path to context embedding of nodes
+    :param aggregate A function to aggregate the multiple context embeddings
     :return: A dictionary of node->context_embeddings
     """
     log('Reading context embedding from {}'.format(path))
@@ -30,6 +31,8 @@ def read_context_embedding(path):
 
     for node in embeddings:
         embeddings[node] = np.vstack(embeddings[node])
+        if aggregate is not None:
+            embeddings[node] = aggregate(embeddings[node])
     return embeddings
 
 
