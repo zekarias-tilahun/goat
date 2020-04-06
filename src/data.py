@@ -194,7 +194,10 @@ class RawData:
         self.neighborhood_matrix = _sample_neighborhood(nbr_size=args.nbr_size, graph=self.graph)
 
         if self._hold_out:
-            """Masking test nodes from the neighborhood matrix"""
+            """
+            Masking out test nodes from the neighborhood matrix, to ensure that they are not sampled
+            as a neighbor of a node during training.
+            """
             msk = np.isin(self.neighborhood_matrix, self.test_nodes)
             self.neighborhood_matrix[msk.reshape(self.neighborhood_matrix.shape)] = 0
 
