@@ -192,8 +192,10 @@ class RawData:
         """
         args = self._args
         self.neighborhood_matrix = _sample_neighborhood(nbr_size=args.nbr_size, graph=self.graph)
+
         if self._hold_out:
-            msk = np.in1d(self.neighborhood_matrix, self.test_nodes)
+            """Masking test nodes from the neighborhood matrix"""
+            msk = np.isin(self.neighborhood_matrix, self.test_nodes)
             self.neighborhood_matrix[msk.reshape(self.neighborhood_matrix.shape)] = 0
 
         self.mask_matrix = torch.FloatTensor(_generate_mask(self.neighborhood_matrix))
