@@ -72,14 +72,13 @@ Citing
 If you find GOAT useful in your research, we kindly ask that you cite the following paper:
 
 ```
-@inproceedings{ZekariasICWSM2020,
-  author    = {Zekarias T. Kefato and
-               Sarunas Girdzijauskasr},
-  title     = {Gossip and Attend: Context-sensitive Graph Representation Learning},
-  booktitle = {in Proceedings of the International AAAI Conference on Web and Social Media (Association for the Advancement of Artificial Intelligence, 2020).},
-  year      = {2020},
-  month     = June,
-  type      = {CONFERENCE},
+@misc{kefato2020gossip,
+    title={Gossip and Attend: Context-Sensitive Graph Representation Learning},
+    author={Zekarias T. Kefato and Sarunas Girdzijauskas},
+    year={2020},
+    eprint={2004.00413},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
 }
 ```
 
