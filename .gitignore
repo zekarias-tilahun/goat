@@ -1,4 +1,5 @@
 *.pyc
-data/**/outputs/*
 .idea/
-extra
+*.ipynb
+data/
+.ipynb_checkpoints/

@@ -2,69 +2,134 @@
 
 A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Graph Representation Learning" paper, to appear on the International AAAI Conference on Web and Social Media (ICWSM 2020)
 
-### Requirements!
-  - Python 3.6+
-  - PyTorch 1.3.1+
+**Update** The repository has been updated to supported a number of other datasets and improve the quality and readability of the source code. 
+
+The code released at the time of publication can be found under the ```legacy``` directory.
+
+Requirements!
+-------------
+
+  - Python 3.7+
+  - PyTorch 1.6
+  - PyTorch Geometric 1.6.1 (For datasets)
   - networkx 2.3+
   - Numpy 1.17.2+
+  - Pandas 0.24.2+ 
 ### Requirements to run evaluation script (optional)
   - Scikit-learn 0.20.3+ 
-  - Pandas 0.24.2+ 
   
-### Usage
-#### Example usage
+  
+Usage
+-----
+
+### Example usage
+
+#### Training
+
+```sh
+$ cd goat
+$ python main.py
+```
+
+Please refer to [```Training Input Arguments```](#Training-Input-Arguments) for more options
+
+#### Evaluation (Link Prediction)
+
+```sh
+$ cd goat
+$ python evaluate.py --task link_prediction
+```
+
+#### Evaluation (Node clustering)
+
+```sh
+$ cd goat
+$ python evaluate.py --task node_clustering
+```
+
+#### Evaluation (Attention weight visualization)
+
+```sh
+$ cd goat
+$ python evaluate.py --task visualization
+```
+Please refer to [```Evaluation Input Arguments```](#Evaluation-Input-Arguments) for more options
+
+or 
+
+The helper shell script ```goat.sh``` can be used to run all the above commands at once 
 
 ```sh
 $ bash ./goat.sh
 ```
 
-or 
 
-```sh
-$ python src/main.py
-```
-
-### Input Arguments
+Training Input Arguments
+------------------------
 
 
-`--input:`
-A path to a graph file. Default is ```./data/cora/graph.txt```
+`--root:` or `-r:` 
+A path to a root directory to put all the datasets. Default is ```./data```
 
-`--fmt:`
-The format of the input graph, either ```edgelist``` or ```adjlist```. Default is ```edgelist```
+`--name:` or `-n:`
+The name of the datasets. Default is ```cora```. Check the [```Supported dataset names```](#Supported-dataset-names) 
 
-`--output-dir:`
-A path to a directory to save intermediate and final outputs of GOAT. Default is ```./data/cora/outputs```
+`--dim:` or `-d:`
+The size (dimension) of embedding (representation) vectors. Default is 200.
 
-`--dim:`
-The size (dimension) of nodes' embedding (representation) vector. Default is 200.
-
-`--epochs:`
-The number of epochs. Default is 100.
-
-`--tr-rate:`
-Training rate, i.e. the fraction of edges to be used as a training set. A value in (0, 1]. Default is .15. The remaining fraction of edges (```1 - tr_rate```), test edges, will be saved in the directory specified by ```--ouput-dir``` argument.
-
-`--dev-rate:`
-Development rate, i.e. the fraction of the training set to be used as a development (validation) set. A value in [0, 1). Default is 0.2.
-
-`--learning-rate:`
-Learning rate, a value in [0, 1]. Default is 0.0001
-
-`--dropout-rate:`
-Dropout rate, a value in [0, 1]. Deafult is 0.5
-
-`--nbr-size:`
+`--num-nbrs:` or `-nbr:`
 The number of neighbors to be sampled. Default is 100.
 
-`--directed:`
-Whether the graph is directed or not. 1 for directed and 0 for undirected. Default is 1.
+`--num-neg:` or `-neg:`
+The number of negative samples. Default is 2.
 
-`--workers:`
-The number of parallel workers. Default is 8.
+`--lr:` or `-lr:`
+Learning rate, a value in [0, 1]. Default is 0.0001
 
-`--verbose:`. 
-Whether to turn on a verbose logger or not. 1 is on and 0 is off. Default is 1.
+`--dropout:` or `-do:`
+Dropout rate, a value in [0, 1]. Deafult is 0.5
+
+`--epoch:` or `-e:`
+The number of epochs. Default is 10.
+
+`--train-prop:` or `-tp:`
+The proportion of training set, i.e. the fraction of edges to be used as a training set. A value in (0, 1]. Default is .50. The remaining fraction of edges (```1 - train_prop```), test edges, will be used for testing.
+
+
+Evaluation Input Arguments
+------------------------
+
+
+`--root:` or `-r:` 
+A path to a root directory to put all the datasets. Default is ```./data```
+
+`--name:` or `-n:`
+The name of the datasets. Default is ```cora```. Check the [```Supported dataset names```](#Supported-dataset-names) 
+
+`--task:` or `-t:`
+The type of evaluation task. Valid options are : ```link_prediction```, ```node_clustering```, or ```visualization```
+
+`--epoch:` or `-e:`
+The specific epoch to be evaluated. Default is 10.
+
+`--train-prop:` or `-tp:`
+The specific training proportion to be evaluated.
+
+
+Supported dataset names
+-----------------------
+ - ```cora``` (Citation dataset - results reported in the paper)
+ - ```zhihu``` (Question and answering dataset - results reported in the paper)
+ - ```email``` (Email exchange dataset - results reported in the paper)
+ - ```citeseer``` (Citation dataset - results reported in the paper)
+ - ```pubmed``` (Citation dataset - results reported in the paper)
+ - ```dblp``` (Citation dataset)
+ - ```cora-full``` (Citation dataset)
+ - ```computers``` (Co-purchased products from Amazon computers category)
+ - ```photo``` (Co-purchased products from Amazon computers category)
+ - ```physics``` (Co-Author relations)
+ - ```cs``` (Co-Author relations)
+ - ```flickr``` (Friendship relations)
 
 Citing
 ------
