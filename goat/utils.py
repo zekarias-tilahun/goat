@@ -282,7 +282,7 @@ def parse_eval_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", "-r", type=str, default="../data", help="A path to a directory to put datasets")
-    parser.add_argument("--name", "-n", type=str, default="cora", help="The name of a dataset")
+    parser.add_argument("--name", "-n", type=str, default="email", help="The name of a dataset. Default is email")
     parser.add_argument("--task", "-t", type=str, default="link_prediction", help="The type of evaluation task. Default is link_prediction")
     parser.add_argument("--nodes", '-nd', type=int, nargs="*", help="Two node ids (source and target) for visualization")
     parser.add_argument("--epoch", '-e', type=int, default=10, help="The particular epoch to be evaluated. Default is 10")
