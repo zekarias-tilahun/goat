@@ -2,7 +2,7 @@
 
 A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Graph Representation Learning" paper, which appeared on the International AAAI Conference on Web and Social Media (ICWSM 2020)
 
-**Update** The repository has been updated to support a number of other datasets and improve the quality and readability of the source code. We closely follow the best practices recommended from torchvision, PyTorch Geomtric, and OGB for the newly added dataset support. 
+**Update** The repository has been updated to support a number of other datasets and improve the quality and readability of the source code. We closely follow the best practices recommended in [PyTorch Geomtric](https://pytorch-geometric.readthedocs.io/en/latest/), [OGB](https://ogb.stanford.edu/) for the newly added dataset support. 
 
 The code released at the time of publication can be found under the ```legacy``` directory.
 
