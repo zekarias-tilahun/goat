@@ -284,7 +284,7 @@ def parse_eval_args():
     parser.add_argument("--root", "-r", type=str, default="../data", help="A path to a directory to put datasets")
     parser.add_argument("--name", "-n", type=str, default="cora", help="The name of a dataset")
     parser.add_argument("--task", "-t", type=str, default="link_prediction", help="The type of evaluation task. Default is link_prediction")
-    parser.add_argument("--nodes", '-nd', type=int, nargs="+", help="")
+    parser.add_argument("--nodes", '-nd', type=int, nargs="*", help="Two node ids (source and target) for visualization")
     parser.add_argument("--epoch", '-e', type=int, default=10, help="The particular epoch to be evaluated. Default is 10")
     parser.add_argument("--batch", '-b', type=int, default=512, help="Batch size. Default is 512.")
     parser.add_argument("--train-prop", "-tp", type=float, default=.5, help="The particular training proportion to be evaluated. Default is .5")

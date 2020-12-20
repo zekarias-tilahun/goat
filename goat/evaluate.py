@@ -256,28 +256,35 @@ class Evaluate:
         
         :param epoch: The epoch
         """
+
+        #TODO: Add a node name mapping for easily readable visualization
         
-        # TODO: Add option to specify the source and target nodes
+        nodes = self._args.nodes
+        assert len(nodes) == 2
+        src, trg = nodes
+        utils.log(f"Generating attention weight visualization between source = {src} and target = {trg} nodes")
         self._load_best_model(best_epoch=epoch)
-        sources, targets, source_atn, target_atn, _, _ = self._fit(self._test_loader)
         
-        rnd_ix = np.random.randint(low=0, high=sources.shape[0])
-        src = sources[rnd_ix]
-        trg = targets[rnd_ix]
+        batch = {
+            "source_neighborhood": self._neighborhood[src].unsqueeze(0),
+            "target_neighborhood": self._neighborhood[trg].unsqueeze(0),
+            "source_mask": self._mask[src].unsqueeze(0),
+            "target_mask": self._mask[trg].unsqueeze(0),
+        }
+        self._model(**utils.to(batch, self._device))
         src_mask = self._mask[src] == 0
         trg_mask = self._mask[trg] == 0
-        
-        src_atn = source_atn[rnd_ix][src_mask]
-        trg_atn = target_atn[rnd_ix][trg_mask]
-        src_nh = self._neighborhood[src][src_mask]
-        trg_nh = self._neighborhood[trg][trg_mask]
-        
+        source_atn = self._model.source_atn.squeeze().detach().cpu().numpy()[src_mask]
+        target_atn = self._model.target_atn.squeeze().detach().cpu().numpy()[trg_mask]
+        source_nbh = batch["source_neighborhood"].squeeze()[src_mask]
+        target_nbh = batch["source_neighborhood"].squeeze()[trg_mask]
+ 
         params = self._params
         data_dir = osp.join(params["root"], params["name"]) if "name" in params else params["root"]
         src_path = osp.join(data_dir, "results", f"source_atn_vis_{src}.html")
         trg_path = osp.join(data_dir, "results", f"target_atn_vis_{trg}.html")
-        utils.visualize_attention_weights(path=src_path, neighborhood=src_nh, weights=src_atn, node_id=src)
-        utils.visualize_attention_weights(path=trg_path, neighborhood=trg_nh, weights=trg_atn, node_id=trg)
+        utils.visualize_attention_weights(path=src_path, neighborhood=source_nbh, weights=source_atn, node_id=src)
+        utils.visualize_attention_weights(path=trg_path, neighborhood=target_nbh, weights=target_atn, node_id=trg)
         
         
 if __name__ == '__main__':
