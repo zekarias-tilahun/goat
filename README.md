@@ -2,7 +2,7 @@
 
 A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Graph Representation Learning" paper, which appeared on the International AAAI Conference on Web and Social Media (ICWSM 2020)
 
-**Update** The repository has been updated to support a number of other datasets and improve the quality and readability of the source code. We closely follow the best practices recommended in [PyTorch Geomtric](https://pytorch-geometric.readthedocs.io/en/latest/), [OGB](https://ogb.stanford.edu/) for the newly added dataset support. 
+**Update** The repository has been updated to support a number of other datasets and improve the quality and readability of the source code. We closely follow the best practices recommended in [PyTorch Geomtric](https://pytorch-geometric.readthedocs.io/en/latest/) and [OGB](https://ogb.stanford.edu/) for the newly added dataset support. 
 
 The code released at the time of publication can be found under the ```legacy``` directory.
 
@@ -93,7 +93,7 @@ Dropout rate, a value in [0, 1]. Deafult is 0.5
 The number of epochs. Default is 10.
 
 `--train-prop:` or `-tp:`
-The proportion of training set, i.e. the fraction of edges to be used as a training set. A value in (0, 1]. Default is .50. The remaining fraction of edges (```1 - train_prop```), test edges, will be used for testing.
+The proportion of training set, i.e. the fraction of edges to be used as a training set. A value in (0, 1]. Default is .5. The remaining fraction of edges (```1 - train_prop```), test edges, will be used for testing.
 
 
 Evaluation Input Arguments
@@ -104,17 +104,19 @@ Evaluation Input Arguments
 A path to a root directory to put all the datasets. Default is ```./data```
 
 `--name:` or `-n:`
-The name of the datasets. Default is ```cora```. Check the [```Supported dataset names```](#Supported-dataset-names) 
+The name of the datasets. Default is ```email```. Check the [```Supported dataset names```](#Supported-dataset-names) 
 
 `--task:` or `-t:`
-The type of evaluation task. Valid options are : ```link_prediction```, ```node_clustering```, or ```visualization```
+The type of evaluation task. Valid options are : ```link_prediction```, ```node_clustering```, or ```visualization```. Default is ```link_prediction```
+
+`--nodes:` or `-nd:`
+The ids of two nodes (source and target) for generating attention weight visualization. Applicable to the ```visualization``` task only.
 
 `--epoch:` or `-e:`
 The specific epoch to be evaluated. Default is 10.
 
 `--train-prop:` or `-tp:`
-The specific training proportion to be evaluated.
-
+The specific training proportion to be evaluated. Default is 0.5
 
 Supported dataset names
 -----------------------
