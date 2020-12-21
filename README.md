@@ -118,6 +118,9 @@ The specific epoch to be evaluated. Default is 10.
 `--train-prop:` or `-tp:`
 The specific training proportion to be evaluated. Default is 0.5
 
+`--identify:` or `-i:`
+A flag to identify the best epoch that leads to the best link prediction result using a validation set. Default is False.
+
 Supported dataset names
 -----------------------
  - ```cora``` (Citation dataset - results reported in the paper)
@@ -129,9 +132,9 @@ Supported dataset names
  - ```cora-full``` (Citation dataset)
  - ```computers``` (Co-purchased products from Amazon computers category)
  - ```photo``` (Co-purchased products from Amazon computers category)
- - ```physics``` (Co-Author relations)
- - ```cs``` (Co-Author relations)
- - ```flickr``` (Friendship relations)
+ - ```physics``` (Co-authorship graphs from the physics category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
+ - ```cs``` (Co-authorship graphs from the computer science category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
+ - ```flickr``` (Common property relation between images)
 
 Citing
 ------
