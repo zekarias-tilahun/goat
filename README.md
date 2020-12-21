@@ -1,6 +1,6 @@
 # GOAT
 
-A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Graph Representation Learning" paper, which appeared on the International AAAI Conference on Web and Social Media (ICWSM 2020)
+A PyTorch implementation of the "**Go**ssip and **At**tend: Context-sensitive Graph Representation Learning" [paper](https://arxiv.org/abs/2004.00413), which appeared on the International AAAI Conference on Web and Social Media (ICWSM 2020)
 
 **Update** The repository has been updated to support a number of other datasets and improve the quality and readability of the source code. We closely follow the best practices recommended in [PyTorch Geomtric](https://pytorch-geometric.readthedocs.io/en/latest/) and [OGB](https://ogb.stanford.edu/) for the newly added dataset support. 
 
@@ -132,8 +132,8 @@ Supported dataset names
  - ```cora-full``` (Citation dataset)
  - ```computers``` (Co-purchased products from Amazon computers category)
  - ```photo``` (Co-purchased products from Amazon computers category)
- - ```physics``` (Co-authorship graphs from the physics category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
- - ```cs``` (Co-authorship graphs from the computer science category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
+ - ```physics``` (Co-authorship graph from the physics category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
+ - ```cs``` (Co-authorship graph from the computer science category based on the Microsoft Academic Graph from the KDD Cup 2016 challenge)
  - ```flickr``` (Common property relation between images)
 
 Citing
