@@ -288,6 +288,9 @@ def parse_eval_args():
     parser.add_argument("--epoch", '-e', type=int, default=10, help="The particular epoch to be evaluated. Default is 10")
     parser.add_argument("--batch", '-b', type=int, default=512, help="Batch size. Default is 512.")
     parser.add_argument("--train-prop", "-tp", type=float, default=.5, help="The particular training proportion to be evaluated. Default is .5")
+    parser.add_argument("--identify", "-i", dest="identify", action="store_true", 
+                        help="Identifies the best epoch that gives the best link prediction result using a validation set")
+    parser.set_defaults(identify=False)
     return parser.parse_args()
 
 

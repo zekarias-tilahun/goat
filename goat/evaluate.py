@@ -182,9 +182,9 @@ class Evaluate:
             utils.log("Epoch {:04d} validation auc: {:.4f}".format(i + 1, auc))
             
             epoch_scores[i + 1] = auc
-        self.best_epoch = max(epoch_scores.items(), key=lambda l: l[1])
-        utils.log("Best epoch: {:04d} with validation auc: {:.4f}".format(self.best_epoch[0], self.best_epoch[1]))
-        return self.best_epoch[0]
+        best_epoch = max(epoch_scores.items(), key=lambda l: l[1])
+        utils.log("Best epoch: {:04d} with validation auc: {:.4f}".format(best_epoch[0], best_epoch[1]))
+        return best_epoch[0]
     
     def link_prediction(self, epoch):
         """
@@ -193,6 +193,7 @@ class Evaluate:
         :param epoch: The epoch
         """
         self._load_best_model(best_epoch=epoch)
+        utils.log("Predicting links ...")
         _, _, _, _, true_source_feature, true_target_feature = self._fit(self._test_loader)
         false_source_feature, false_target_feature = self._fit_false_pairs()
         auc = self._compute_auc(true_source_feature, true_target_feature,
@@ -205,48 +206,45 @@ class Evaluate:
         
         :param epoch: The epoch
         """
-        utils.log("Node clustering ...")
         self._load_best_model(best_epoch=epoch)
-        sources, targets, _, _, true_source_feature, true_target_feature = self._fit(self._loader)
-        clustering = cluster.KMeans(n_clusters=42, random_state=0)
-        prediction_using_source = clustering.fit(true_source_feature).labels_
-        prediction_using_target = clustering.fit(true_target_feature).labels_
+        utils.log("Clustering nodes ...")
+        sources, targets, _, _, source_features, target_features = self._fit(self._loader)
+        nodes = sorted(set(sources) | set(targets))
         
-        def add_to_dict(dict_, node, label):
-            if node in dict_:
-                if label in dict_[node]:
-                    dict_[node][label] += 1
-                else:
-                    dict_[node][label] = 1
+        # Group features by node id
+        def group_features(emb_dict, n, e):
+            if n in emb_dict:
+                emb_dict[n].append(e)
             else:
-                dict_[node] = {label: 1}
-                
-        src_pred_count, trg_pred_count = {}, {}
+                emb_dict[n] = [e]
+            
+        source_grouped_f, target_grouped_f = {}, {}
         for i in range(sources.shape[0]):
-            src, trg = sources[i], targets[i]
-            src_p = prediction_using_source[i]
-            trg_p = prediction_using_target[i]
+            group_features(source_grouped_f, sources[i], source_features[i])
+            group_features(target_grouped_f, targets[i], target_features[i])
             
-            add_to_dict(src_pred_count, src, src_p)
-            add_to_dict(trg_pred_count, trg, trg_p)
-            
-        # TODO: Decide a combination strategy
+        # Aggregate grouped features
+        aggregated_features = np.zeros((self._y.shape[0], source_features.shape[1]))
+        for node in nodes:
+            se = te = None
+            if node in source_grouped_f:
+                se = np.stack(source_grouped_f[node]).mean(0)
+            if node in target_grouped_f:
+                te = np.stack(target_grouped_f[node]).mean(0)
+                
+            if se is not None and te is not None:
+                aggregated_features[node] = np.stack([se, te]).mean(0)
+            elif se is not None:
+                aggregated_features[node] = se
+            elif te is not None:
+                aggregated_features[node] = te
+
+        kmeans = cluster.KMeans(n_clusters=42, random_state=0)
+        clusters = kmeans.fit(aggregated_features).labels_
         
-        src_labels = np.zeros(self._y.shape[0])
-        for node in src_pred_count:
-            src_labels[node] = max(src_pred_count[node].items(), key=lambda l:l[1])[0]
-            
-        trg_labels = np.zeros(self._y.shape[0])
-        for node in trg_pred_count:
-            trg_labels[node] = max(trg_pred_count[node].items(), key=lambda l:l[1])[0]
-            
-        nmi = metrics.normalized_mutual_info_score(self._y, src_labels, average_method='arithmetic')
-        ami = metrics.adjusted_mutual_info_score(self._y, src_labels, average_method='arithmetic')
-        print("using source", nmi, ami)
-        
-        nmi = metrics.normalized_mutual_info_score(self._y, trg_labels, average_method='arithmetic')
-        ami = metrics.adjusted_mutual_info_score(self._y, trg_labels, average_method='arithmetic')
-        print("using target", nmi, ami)
+        nmi = metrics.normalized_mutual_info_score(self._y, clusters, average_method='arithmetic')
+        ami = metrics.adjusted_mutual_info_score(self._y, clusters, average_method='arithmetic')
+        utils.log(f"Clustering results: NMI = {nmi} and AMI = {ami}")
         return nmi, ami
         
     
@@ -289,12 +287,13 @@ class Evaluate:
         
 if __name__ == '__main__':
     args_ = utils.parse_eval_args()
+    print(args_.identify)
     evaluator = Evaluate(args=args_)
+    best_epoch = evaluator.identify_best_epoch() if args_.identify else args_.epoch
     if args_.task == "link_prediction":
-        evaluator.identify_best_epoch()
-        evaluator.link_prediction(evaluator.best_epoch[0])
+        evaluator.link_prediction(best_epoch)
     elif args_.task == "node_clustering":
-        evaluator.node_clustering(epoch=args_.epoch)
+        evaluator.node_clustering(best_epoch)
     elif args_.task == "visualization":
-        evaluator.visualize_attention_weights(epoch=args_.epoch)
+        evaluator.visualize_attention_weights(best_epoch)
     
